@@ -2,11 +2,11 @@ GPU_ID=1
 
 # DATASET='s3dis'
 # SPLIT=0
-# DATA_PATH='/data0/zhuxiangyang/pointcloud/PAP-FZS3D-main/datasets/S3DIS/blocks_bs1_s1'
+# DATA_PATH='TFS3D-main/datasets/S3DIS/blocks_bs1_s1'
 
 DATASET='scannet'
 SPLIT=1
-DATA_PATH='/data0/zhuxiangyang/pointcloud/PAP-FZS3D-main/datasets/ScanNet/blocks_bs1_s1'
+DATA_PATH='TFS3D-main/datasets/ScanNet/blocks_bs1_s1'
 
 NUM_POINTS=2048
 PC_ATTRIBS='xyzrgbXYZ'
