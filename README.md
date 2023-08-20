@@ -48,7 +48,7 @@ bash scripts/training.sh
 The test procedure has been included in the above command after training and validation.
 
 
-Note that the above scripts are used for 2-way 1-shot on S3DIS (S^0). Please modify the corresponding hyperparameters to conduct experiments on other settings. 
+Note that the above scripts are used for 2-way 1-shot on S3DIS (S_0). Please modify the corresponding hyperparameters to conduct experiments on other settings. 
 
 
 
