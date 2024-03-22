@@ -1,5 +1,6 @@
 # Less is More: Towards Efficient Few-shot 3D Semantic Segmentation via Training-free Networks
 
+This is an old and incomplete version. We will update the code soon ... 
 
 ## Introduction
 we propose an efficient **T**raining-free **F**ew-shot 3D **S**egmentation netwrok, TFS3D, and a further training-based variant, TFS3D-T. TFS3D introduces no learnable parameters and and requires no training. Specifically, TFS3D extracts dense representations by trigonometric positional encodings and achieves comparable performance to some training-based methods. Building upon TFS3D, TFS3D-T only requires to train a lightweight query-support transferring attention (QUEST), which enhances the interaction between the few-shot query and support data.
