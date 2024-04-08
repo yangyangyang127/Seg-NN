@@ -3,7 +3,7 @@
 This is an old and incomplete version. We will update the code soon ... 
 
 ## Introduction
-we propose an efficient **N**onparametric **Network** for Few-shot 3D **Seg**mentation, Seg-NN, and a further parametric variant, Seg-PN. Seg-NN introduces no learnable parameters and and requires no training. Specifically, Seg-NN extracts dense representations by trigonometric positional encodings and achieves comparable performance to some training-based methods. Building upon Seg-NN, Seg-PN only requires to train a lightweight query-support transferring module (QUEST), which enhances the interaction between the few-shot query and support data.
+we propose an efficient **N**onparametric **N**etwork for Few-shot 3D **Seg**mentation, Seg-NN, and a further parametric variant, Seg-PN. Seg-NN introduces no learnable parameters and and requires no training. Specifically, Seg-NN extracts dense representations by trigonometric positional encodings and achieves comparable performance to some training-based methods. Building upon Seg-NN, Seg-PN only requires to train a lightweight query-support transferring module (QUEST), which enhances the interaction between the few-shot query and support data.
 
 ![framework](framework3d.png)
 
