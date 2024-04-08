@@ -1,9 +1,9 @@
-# Less is More: Towards Efficient Few-shot 3D Semantic Segmentation via Training-free Networks
+# No Time to Train: Empowering Non-Parametric Networks for Few-shot 3D Scene Segmentation
 
 This is an old and incomplete version. We will update the code soon ... 
 
 ## Introduction
-we propose an efficient **T**raining-free **F**ew-shot 3D **S**egmentation netwrok, TFS3D, and a further training-based variant, TFS3D-T. TFS3D introduces no learnable parameters and and requires no training. Specifically, TFS3D extracts dense representations by trigonometric positional encodings and achieves comparable performance to some training-based methods. Building upon TFS3D, TFS3D-T only requires to train a lightweight query-support transferring attention (QUEST), which enhances the interaction between the few-shot query and support data.
+we propose an efficient **N**onparametric **Network** for Few-shot 3D **Seg**mentation, Seg-NN, and a further parametric variant, Seg-PN. Seg-NN introduces no learnable parameters and and requires no training. Specifically, Seg-NN extracts dense representations by trigonometric positional encodings and achieves comparable performance to some training-based methods. Building upon Seg-NN, Seg-PN only requires to train a lightweight query-support transferring module (QUEST), which enhances the interaction between the few-shot query and support data.
 
 ![framework](framework3d.png)
 
@@ -12,10 +12,10 @@ we propose an efficient **T**raining-free **F**ew-shot 3D **S**egmentation netwr
 ### Installation
 Create a conda environment and install dependencies:
 ```bash
-cd TFS3D
+cd Seg-NN 
 
-conda create -n TFS3D python=3.7
-conda activate TFS3D
+conda create -n SegNN python=3.7
+conda activate SegNN
 
 # Install the according versions of torch and torchvision
 conda install pytorch torchvision cudatoolkit
@@ -30,15 +30,15 @@ pip install pointnet2_ops_lib/.
 
 
 
-### TFS3D
+### Seg-NN 
 
-TFS3D does not require any training and can conduct few-shot segmentation directly via:
+Seg-NN does not require any training and can conduct few-shot segmentation directly via:
 
 ```bash
 bash scripts/training_free.sh
 ```
 
-### TFS3D-T
+### Seg-PN 
 
 Train and test our method under few-shot setting:
 
