@@ -1,9 +1,15 @@
-# No Time to Train: Empowering Non-Parametric Networks for Few-shot 3D Scene Segmentation
+# No Time to Train 🚀: Empowering Non-Parametric Networks for Few-shot 3D Scene Segmentation
 
 This is an old and incomplete version. We will update the code soon ... 
 
+## 💥 News
+
+- **[2024.04]** Seg-NN is awarded as 🔥 ***Highlight Paper*** 🔥 in CVPR 2024!
+- **[2024.02]** Seg-NN is accepted by CVPR 2024 🎉!
+- **[2023.12]** We release the [paper](https://arxiv.org/pdf/2404.04050.pdf) adapting [Point-NN & Point-PN](https://github.com/ZrrSkywalker/Point-NN) into 3D scene segmentation tasks.
+
 ## Introduction
-we propose an efficient **N**onparametric **N**etwork for Few-shot 3D **Seg**mentation, Seg-NN, and a further parametric variant, Seg-PN. Seg-NN introduces no learnable parameters and and requires no training. Specifically, Seg-NN extracts dense representations by trigonometric positional encodings and achieves comparable performance to some training-based methods. Building upon Seg-NN, Seg-PN only requires to train a lightweight query-support transferring module (QUEST), which enhances the interaction between the few-shot query and support data.
+we propose an efficient **N**onparametric **N**etwork for Few-shot 3D **Seg**mentation, Seg-NN, and a further parametric variant, Seg-PN. Seg-NN introduces no learnable parameters and requires no training. Specifically, Seg-NN extracts dense representations by trigonometric positional encodings and achieves comparable performance to some training-based methods. Building upon Seg-NN, Seg-PN only requires to train a lightweight query-support transferring module (QUEST), which enhances the interaction between the few-shot query and support data.
 
 ![framework](framework3d.png)
 
