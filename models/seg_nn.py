@@ -1,20 +1,25 @@
-""" TFS3D Network 
+""" SegNN Network 
 """
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.point_nn import Point_NN_Seg
+from models.encoder import Encoder_Seg
 
-class TFS3D(nn.Module):
+class SegNN(nn.Module):
     def __init__(self, args):
-        super(TFS3D, self).__init__()
+        super(SegNN, self).__init__()
         self.n_way = args.n_way
         self.k_shot = args.k_shot
+        self.dataset = args.dataset
         
-        self.point_nn = Point_NN_Seg(input_points=2048, num_stages=3, embed_dim=90, k_neighbors=8, de_neighbors=8,
-                                     alpha=1000, beta=30)
-        self.point_nn.eval()
+        if args.dataset == 's3dis':
+            self.encoder = Encoder_Seg(input_points=2048, num_stages=3, embed_dim=120, k_neighbors=16, de_neighbors=20,
+                                        alpha=1000, beta=30)
+        elif args.dataset == 'scannet':
+            self.encoder = Encoder_Seg(input_points=2048, num_stages=2, embed_dim=120, k_neighbors=16, de_neighbors=20,
+                                        alpha=1000, beta=20)
+        self.encoder.eval()
 
     def forward(self, support_x, support_y, query_x, query_y):
         
@@ -27,7 +32,7 @@ class TFS3D(nn.Module):
         
         # Pass through the Non-Parametric Encoder + Decoder
         with torch.no_grad():
-            support_features, support_XYZ_features = self.point_nn(support_x)
+            support_features, support_XYZ_features = self.encoder(support_x)
             support_features = support_features.permute(0, 2, 1)  # bz, 2048, c
             support_features = support_features / torch.norm(support_features, dim=-1, keepdim=True)
             
@@ -70,7 +75,7 @@ class TFS3D(nn.Module):
             XYZ_memory = XYZ_memory / torch.norm(XYZ_memory, dim=-1, keepdim=True)
             XYZ_memory = XYZ_memory.permute(1, 0)
             
-            query_features, query_XYZ_features = self.point_nn(query_x)
+            query_features, query_XYZ_features = self.encoder(query_x)
             query_features = query_features.permute(0, 2, 1)  # bz, 2048, c
             query_features /= query_features.norm(dim=-1, keepdim=True)
             
@@ -79,13 +84,18 @@ class TFS3D(nn.Module):
         
             Sim = query_features @ feature_memory
             Sim_XYZ = query_XYZ_features @ XYZ_memory
-            logits = (-400 * (1 - Sim)).exp() @ label_memory.float()
-            logits_XYZ = (-400 * (1 - Sim_XYZ)).exp() @ label_memory.float()
-            logits = 0.8*logits + 0.2*logits_XYZ
+            
+            if self.dataset == 's3dis':
+                logits = (-100 * (1 - Sim)).exp() @ label_memory.float()
+                logits_XYZ = (-100 * (1 - Sim_XYZ)).exp() @ label_memory.float()
+            elif self.dataset == 'scannet':
+                logits = (-100 * (1 - Sim)).exp() @ label_memory.float()
+                logits_XYZ = (-100 * (1 - Sim_XYZ)).exp() @ label_memory.float()
+            logits = logits + logits_XYZ
             
             logits = F.softmax(logits, dim=-1)
                         
-        return logits, 1
+        return logits, 0
     
 
     

@@ -1,6 +1,5 @@
 """ Util functions for writing logs
 
-
 """
 import os
 
@@ -34,7 +33,4 @@ def init_logger(log_dir, args):
     mkdir(log_dir)
     log_file = os.path.join(log_dir, 'log_%s.txt' %args.model)
     logger = IOStream(log_file)
-    # logger.cprint(str(args))
-    ## print arguments in format
-    #print_args(logger, args)
     return logger

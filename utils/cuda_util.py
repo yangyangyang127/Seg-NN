@@ -1,6 +1,4 @@
 """ Cuda util function
-
-
 """
 
 def cast_cuda(input):

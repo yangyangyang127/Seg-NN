@@ -1,14 +1,12 @@
 """Evaluating functions for Few-shot 3D Point Cloud Semantic Segmentation
 """
-import os
 import numpy as np
 from datetime import datetime
 
-import torch
 from torch.utils.data import DataLoader
 
-from dataloaders.loader import MyTestDataset, batch_test_task_collate
-from models.tfs3d_learner import Learner
+from dataloaders.loader import MyTestDataset, batch_task_collate
+from models.seg_learner import Learner
 from utils.cuda_util import cast_cuda
 from utils.logger import init_logger
 
@@ -21,7 +19,7 @@ def evaluate_metric(logger, pred_labels_list, gt_labels_list, label2class_list, 
     :return: iou: scaler
     """
     assert len(pred_labels_list) == len(gt_labels_list) == len(label2class_list)
-
+    
     logger.cprint('*****Test Classes: {0}*****'.format(test_classes))
 
     NUM_CLASS = len(test_classes) + 1  # add 1 to consider background class
@@ -56,7 +54,6 @@ def evaluate_metric(logger, pred_labels_list, gt_labels_list, label2class_list, 
     iou_list = []
     for c in range(NUM_CLASS):
         iou = true_positive_classes[c] / float(gt_classes[c] + positive_classes[c] - true_positive_classes[c] + 0.001)
-        logger.cprint('----- [class %d]  IoU: %f -----' % (c, iou))
         iou_list.append(iou)
 
     mean_IoU = np.array(iou_list[1:]).mean()
@@ -65,31 +62,30 @@ def evaluate_metric(logger, pred_labels_list, gt_labels_list, label2class_list, 
 
 
 def test_few_shot(test_loader, learner, logger, test_classes):
-    total_loss = 0
-
+    
     predicted_label_total = []
     gt_label_total = []
     label2class_total = []
-    print(str(datetime.now()))
+    all_acc = []
     for batch_idx, (data, sampled_classes) in enumerate(test_loader):
+        
         query_label = data[-1]
-
-        if torch.cuda.is_available():
-            data = cast_cuda(data)
-        query_pred, loss = learner.test(data, sampled_classes)
+        
+        data = cast_cuda(data)
+        
+        query_pred, acc = learner.test(data)
             
-        total_loss += loss
-
-        if (batch_idx + 1) % 100 == 0:
-            logger.cprint('[Eval] Iter: %d | Loss: %.4f | %s' % (batch_idx + 1, loss, str(datetime.now())))
+        if (batch_idx + 1) % 500 == 0:
+            logger.cprint('[Eval] Iter: %d | Acc: %.4f | %s' % (batch_idx + 1, acc, str(datetime.now())))
 
         predicted_label_total.append(query_pred.cpu().detach().numpy())
         gt_label_total.append(query_label.numpy())
         label2class_total.append(sampled_classes)
-
-    mean_loss = total_loss / len(test_loader)
+        all_acc.append(acc)
+    
+    mean_acc = sum(all_acc) / len(all_acc)        
     mean_IoU = evaluate_metric(logger, predicted_label_total, gt_label_total, label2class_total, test_classes)
-    return mean_loss, mean_IoU
+    return mean_IoU
 
 
 def training_free(args):
@@ -98,14 +94,15 @@ def training_free(args):
     learner = Learner(args)
         
     # Init dataset, dataloader
-    TEST_DATASET = MyTestDataset(args.data_path, args.dataset, cvfold=args.cvfold,
+    TEST_DATASET = MyTestDataset(args.model, args.data_path, args.dataset, cvfold=args.cvfold,
                                  num_episode_per_comb=args.n_episode_test,
                                  n_way=args.n_way, k_shot=args.k_shot, n_queries=args.n_queries,
                                  num_point=args.pc_npts, pc_attribs=args.pc_attribs, 
                                  way_ratio=args.way_pcratio, way_num=args.way_pcnum, mode='test')
     TEST_CLASSES = list(TEST_DATASET.classes)
-    TEST_LOADER = DataLoader(TEST_DATASET, batch_size=1, shuffle=False, collate_fn=batch_test_task_collate)
+    TEST_LOADER = DataLoader(TEST_DATASET, batch_size=1, shuffle=False, collate_fn=batch_task_collate)
 
-    test_loss, mean_IoU = test_few_shot(TEST_LOADER, learner, logger, TEST_CLASSES)
+    mean_IoU = test_few_shot(TEST_LOADER, learner, logger, TEST_CLASSES)
 
-    logger.cprint('\n=====[TEST] Loss: %.4f | Mean IoU: %f =====\n' % (test_loss, mean_IoU))
+    logger.cprint('\n=====[TEST] Mean IoU: %f =====\n' % (mean_IoU))
+

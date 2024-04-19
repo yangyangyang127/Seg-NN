@@ -1,4 +1,4 @@
-""" Data Loader for Generating Tasks
+""" Data Loader
 """
 import os
 import random
@@ -50,6 +50,12 @@ def sample_pointcloud(data_path, num_point, pc_attribs, pc_augm, pc_augm_config,
         sampled_other_point_inds = np.random.choice(np.arange(N), num_point-sampled_valid_point_num,
                                                     replace=(N<num_point))
         sampled_point_inds = np.concatenate([sampled_valid_point_inds, sampled_other_point_inds])
+        
+    ### Please note:
+    # We find a bug in existing codes. The pre-processed points via existing code are ordered, which may 
+    # cause models to learn the order of points during training. 
+    # Thus we add the below line of code to shuffle points.
+    np.random.shuffle(sampled_point_inds)
 
     data = data[sampled_point_inds]
     xyz = data[:, 0:3]
@@ -216,31 +222,10 @@ class MyDataset(Dataset):
         return support_ptclouds, support_masks, query_ptclouds, query_labels
 
 
-def batch_train_task_collate(batch):
-    task_train_support_ptclouds, task_train_support_masks, task_train_query_ptclouds, task_train_query_labels, \
-    task_valid_support_ptclouds, task_valid_support_masks, task_valid_query_ptclouds, task_valid_query_labels = list(zip(*batch))
-
-    task_train_support_ptclouds = np.stack(task_train_support_ptclouds)
-    task_train_support_masks = np.stack(task_train_support_masks)
-    task_train_query_ptclouds = np.stack(task_train_query_ptclouds)
-    task_train_query_labels = np.stack(task_train_query_labels)
-    task_valid_support_ptclouds = np.stack(task_valid_support_ptclouds)
-    task_valid_support_masks = np.stack(task_valid_support_masks)
-    task_valid_query_ptclouds = np.array(task_valid_query_ptclouds)
-    task_valid_query_labels = np.stack(task_valid_query_labels)
-
-    data = [torch.from_numpy(task_train_support_ptclouds).transpose(3,4), torch.from_numpy(task_train_support_masks),
-            torch.from_numpy(task_train_query_ptclouds).transpose(2,3), torch.from_numpy(task_train_query_labels),
-            torch.from_numpy(task_valid_support_ptclouds).transpose(3,4), torch.from_numpy(task_valid_support_masks),
-            torch.from_numpy(task_valid_query_ptclouds).transpose(2,3), torch.from_numpy(task_valid_query_labels)]
-
-    return data
-
-
 ################################################ Static Testing Dataset ################################################
 
 class MyTestDataset(Dataset):
-    def __init__(self, data_path, dataset_name, cvfold=0, num_episode_per_comb=100, n_way=3, k_shot=5, n_queries=1,
+    def __init__(self, model, data_path, dataset_name, cvfold=0, num_episode_per_comb=100, n_way=3, k_shot=5, n_queries=1,
                        num_point=4096, pc_attribs='xyz', way_ratio=[0.05, 0.05], way_num=[100, 100], mode='valid'):
         super(MyTestDataset).__init__()
 
@@ -249,11 +234,11 @@ class MyTestDataset(Dataset):
         self.classes = dataset.classes
 
         if mode == 'valid':
-            test_data_path = os.path.join(data_path, 'S_%d_N_%d_K_%d_episodes_%d_pts_%d' % (
-                                                    cvfold, n_way, k_shot, num_episode_per_comb, num_point))
+            test_data_path = os.path.join(data_path, '%s_S_%d_N_%d_K_%d_episodes_%d_pts_%d' % (
+                                                    model, cvfold, n_way, k_shot, num_episode_per_comb, num_point))
         elif mode == 'test':
-            test_data_path = os.path.join(data_path, 'S_%d_N_%d_K_%d_test_episodes_%d_pts_%d' % (
-                                                    cvfold, n_way, k_shot, num_episode_per_comb, num_point))
+            test_data_path = os.path.join(data_path, '%s_S_%d_N_%d_K_%d_test_episodes_%d_pts_%d' % (
+                                                    model, cvfold, n_way, k_shot, num_episode_per_comb, num_point))
         else:
             raise NotImplementedError('Mode (%s) is unknown!' %mode)
 
@@ -286,7 +271,7 @@ class MyTestDataset(Dataset):
         return read_episode(file_name)
 
 
-def batch_test_task_collate(batch):
+def batch_task_collate(batch):
     batch_support_ptclouds, batch_support_masks, batch_query_ptclouds, batch_query_labels, batch_sampled_classes = batch[0]
 
     data = [torch.from_numpy(batch_support_ptclouds).transpose(2,3), torch.from_numpy(batch_support_masks),
@@ -317,45 +302,3 @@ def read_episode(file_name):
     sampled_classes = data_file['sampled_classes'][:]
 
     return support_ptclouds, support_masks, query_ptclouds, query_labels, sampled_classes
-
-
-################################################  Pre-train Dataset ################################################
-class MyPretrainDataset(Dataset):
-    def __init__(self, data_path, classes, class2scans, mode='train', num_point=4096, pc_attribs='xyz',
-                       pc_augm=False, pc_augm_config=None):
-        super(MyPretrainDataset).__init__()
-        self.data_path = data_path
-        self.classes = classes
-        self.num_point = num_point
-        self.pc_attribs = pc_attribs
-        self.pc_augm = pc_augm
-        self.pc_augm_config = pc_augm_config
-
-        train_block_names = []
-        all_block_names = []
-        for k, v in sorted(class2scans.items()):
-            all_block_names.extend(v)
-            n_blocks = len(v)
-            n_test_blocks = int(n_blocks * 0.1)
-            n_train_blocks = n_blocks - n_test_blocks
-            train_block_names.extend(v[:n_train_blocks])
-
-        if mode == 'train':
-            self.block_names = list(set(train_block_names))
-        elif mode == 'test':
-            self.block_names = list(set(all_block_names) - set(train_block_names))
-        else:
-            raise NotImplementedError('Mode is unknown!')
-
-        print('[Pretrain Dataset] Mode: {0} | Num_blocks: {1}'.format(mode, len(self.block_names)))
-
-    def __len__(self):
-        return len(self.block_names)
-
-    def __getitem__(self, index):
-        block_name = self.block_names[index]
-
-        ptcloud, label = sample_pointcloud(self.data_path, self.num_point, self.pc_attribs, self.pc_augm,
-                                           self.pc_augm_config, block_name, self.classes, random_sample=True)
-
-        return torch.from_numpy(ptcloud.transpose().astype(np.float32)), torch.from_numpy(label.astype(np.int64))

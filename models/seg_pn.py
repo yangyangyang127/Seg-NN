@@ -1,26 +1,26 @@
-""" TFS3D_T Network 
+""" SegPN Network 
 """
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.point_nn import Point_NN_Seg
-from models.attention import QUEST
+from models.encoder import Encoder_Seg
+from models.quest import QUEST
 
-class TFS3D_T(nn.Module):
+class SegPN(nn.Module):
     def __init__(self, args):
-        super(TFS3D_T, self).__init__()
+        super(SegPN, self).__init__()
         self.n_way = args.n_way
         self.k_shot = args.k_shot
         self.n_points = args.pc_npts
         
-        self.point_nn = Point_NN_Seg(input_points=2048, num_stages=3, embed_dim=60, k_neighbors=8, de_neighbors=8,
-                                     alpha=1000, beta=70)
+        self.encoder = Encoder_Seg(input_points=2048, num_stages=3, embed_dim=60, k_neighbors=16, de_neighbors=10,
+                                     alpha=1000, beta=30)
         
         self.Dim = 900
-        self.bn1 = nn.Sequential(nn.BatchNorm1d(900),
+        self.bn = nn.Sequential(nn.BatchNorm1d(self.Dim),
                                 nn.ReLU())
-        self.fc = nn.Sequential(nn.Conv1d(900, 196, 1),
+        self.fc = nn.Sequential(nn.Conv1d(self.Dim, 196, 1),
                                 nn.BatchNorm1d(196),
                                 nn.ReLU(), 
                                 nn.Conv1d(196, 128, 1), 
@@ -28,7 +28,7 @@ class TFS3D_T(nn.Module):
                                 nn.ReLU(),
                                 )
         
-        self.att_learner = QUEST()
+        self.quest = QUEST()
         
     def forward(self, support_x, support_y, query_x, query_y):
         """
@@ -49,20 +49,21 @@ class TFS3D_T(nn.Module):
         
         # Pass through the Non-Parametric Encoder + Decoder
         with torch.no_grad():
-            support_features = self.point_nn(support_x, variant='training')
-            support_features = support_features / torch.norm(support_features, dim=1, keepdim=True)
+            support_features = self.encoder(support_x, variant='training')
+            support_features = support_features / support_features.norm(dim=1, keepdim=True)
             
-            query_features = self.point_nn(query_x, variant='training')
+            query_features = self.encoder(query_x, variant='training')
             query_features = query_features / query_features.norm(dim=1, keepdim=True)
         
-        support_feat = self.bn1(support_features)
+        support_feat = self.bn(support_features)
         support_feat = self.fc(support_feat)
         support_feat = support_feat.permute(0, 2, 1)
 
-        query_feat = self.bn1(query_features)
+        query_feat = self.bn(query_features)
         query_feat = self.fc(query_feat)
         query_feat = query_feat.permute(0, 2, 1)
         
+        # obtain prototype
         feature_memory_list, label_memory_list = [], []
         support_feat = support_feat.view(N_way, K_shot, PN, -1)
         
@@ -90,8 +91,9 @@ class TFS3D_T(nn.Module):
         feature_memory = feature_memory / torch.norm(feature_memory, dim=-1, keepdim=True)
         
         feature_memory = feature_memory.unsqueeze(0).repeat(N_way, 1, 1)
-        feature_memory = self.att_learner(query_feat, support_feat, feature_memory, support_x[:, :, 6:], query_x[:, :, 6:])
+        feature_memory = self.quest(query_feat, support_feat, feature_memory)
         
+        # similarity-based segmentation
         sim = [query_feat[i] @ feature_memory[i].t() for i in range(N_way)]
         sim = torch.stack(sim, dim=0)
         logits = sim @ label_memory.float()
