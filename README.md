@@ -1,6 +1,5 @@
 # No Time to Train 🚀: Empowering Non-Parametric Networks for Few-shot 3D Scene Segmentation
 
-This is an old and incomplete version. We will update the code soon ... 
 
 ## 💥 News
 
@@ -34,6 +33,8 @@ pip install pointnet2_ops_lib/.
 
 **Installation and data preparation please follow [attMPTI](https://github.com/Na-Z/attMPTI).**
 
+**Please Note:** We find a [bug](https://github.com/yangyangyang127/Seg-NN/blob/main/dataloaders/loader.py#L54) in existing data preparation codes. The pre-processed points via existing code are ordered, which may cause models to learn the order of points during training. Thus we add [this line](https://github.com/yangyangyang127/Seg-NN/blob/eddbbedc532abe3f02e362f846c98f24f7fb4ea9/dataloaders/loader.py#L58) to shuffle the points.
+
 
 
 ### Seg-NN 
@@ -41,21 +42,29 @@ pip install pointnet2_ops_lib/.
 Seg-NN does not require any training and can conduct few-shot segmentation directly via:
 
 ```bash
-bash scripts/training_free.sh
+bash scripts/segnn.sh
 ```
 
 ### Seg-PN 
 
-Train and test our method under few-shot setting:
+We have released the pre-trained models under [log_s3dis_SegPN](https://github.com/yangyangyang127/Seg-NN/tree/main/log_s3dis_SegPN) and [log_scannet_SegPN](https://github.com/yangyangyang127/Seg-NN/tree/main/log_scannet_SegPN) fold. To test our model, direct run:
 
 ```bash
-bash scripts/training.sh
+bash scripts/segpn_eval.sh
 ```
 
-The test procedure has been included in the above command after training and validation.
+Please note that randomness exists during training even though we have set a random seed.
+
+If you want to train our method under the few-shot setting:
+
+```bash
+bash scripts/segpn.sh
+```
+
+The test procedure has been included in the above training command after validation.
 
 
-Note that the above scripts are used for 2-way 1-shot on S3DIS (S_0). Please modify the corresponding hyperparameters to conduct experiments on other settings. 
+Note that the above scripts are used for 2-way 1-shot on S3DIS (S_0). Please modify the corresponding hyperparameters to conduct experiments in other settings. 
 
 
 
