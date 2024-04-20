@@ -18,8 +18,8 @@ SAVE_PATH='./log_s3dis_SegNN/'
 # DATA_PATH='datasets/ScanNet/blocks_bs1_s1'
 # NUM_POINTS=2048
 # PC_ATTRIBS='xyzrgbXYZ'
-# WAY_SAMP_RATIO='[0.25, 0.25]'
-# WAY_SAMP_NUM='[500, 500]'
+# WAY_SAMP_RATIO='[0.3, 0.3]'
+# WAY_SAMP_NUM='[600, 600]'
 # SAVE_PATH='./log_scannet_SegNN/'
 
 
